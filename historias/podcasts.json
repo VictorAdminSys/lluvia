@@ -1,0 +1,13 @@
+[
+  { "nombre": "SER Historia", "feed": "https://www.ivoox.com/feed_fg_f13652_filtro_1.xml" },
+  { "nombre": "La ContraHistoria", "feed": "https://www.ivoox.com/feed_fg_f1298566_filtro_1.xml" },
+  { "nombre": "Cualquier tiempo pasado fue anterior", "feed": "https://www.ivoox.com/feed_fg_f11372628_filtro_1.xml" },
+  { "nombre": "Casus Belli", "feed": "https://www.ivoox.com/feed_fg_f1391278_filtro_1.xml" },
+  { "nombre": "Roma Aeterna", "feed": "https://www.ivoox.com/feed_fg_f1918392_filtro_1.xml" },
+  { "nombre": "Antena Historia", "feed": "https://www.ivoox.com/feed_fg_f1134979_filtro_1.xml" },
+  { "nombre": "Pedazos de historia", "feed": "https://www.ivoox.com/feed_fg_f12277848_filtro_1.xml" },
+  { "nombre": "Dentro de la pirámide", "feed": "https://www.ivoox.com/feed_fg_f1865799_filtro_1.xml" },
+  { "nombre": "HistoCast", "feed": "https://www.ivoox.com/feed_fg_f132047_filtro_1.xml" },
+  { "nombre": "Victoria", "feed": "https://www.ivoox.com/feed_fg_f1781831_filtro_1.xml" },
+  { "nombre": "Memorias de un tambor", "feed": "https://www.ivoox.com/feed_fg_f1380545_filtro_1.xml" }
+]
