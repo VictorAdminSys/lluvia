@@ -1,7 +1,7 @@
 // Guarda la interfaz para que abra al instante y sin conexión.
 // Los audios NO pasan por aquí: Safari necesita servirlos por rangos
 // y eso solo funciona bien directamente desde la red/caché HTTP.
-const CACHE = "lluvia-v2";
+const CACHE = "lluvia-v3";
 const APP = [
   "./",
   "index.html",
