@@ -379,8 +379,25 @@
     if (modo === "historia" && historia) { historia.pos = 0; guardar("historia", JSON.stringify(historia)); }
     finEn = null; pintar();
   });
+  // Algunos podcasts publican avances cortos en abierto o enlaces rotos:
+  // si el episodio no carga o dura menos de 20 min, se salta solo a otro (máx. 3 intentos seguidos).
+  let saltos = 0;
+  function saltarHistoria() {
+    if (modo !== "historia" || saltos >= 3) {
+      estado.textContent = "Este episodio no carga: pulsa Historia para otro";
+      return;
+    }
+    saltos++;
+    btnHistoria.click();
+  }
+  audio.addEventListener("loadedmetadata", () => {
+    if (modo !== "historia" || !historia || !isFinite(audio.duration)) return;
+    if (!historia.pos && audio.duration < 20 * 60) saltarHistoria();
+    else saltos = 0;   // solo se reinicia con un episodio bueno
+  });
   audio.addEventListener("error", () => {
-    if (audio.src) estado.textContent = modo === "historia" ? "Este episodio no carga: pulsa Historia para otro" : "No se pudo cargar el sonido";
+    if (!audio.src) return;
+    if (modo === "historia") saltarHistoria(); else estado.textContent = "No se pudo cargar el sonido";
   });
   audio.addEventListener("timeupdate", comprobar);   // sigue llegando con la pantalla bloqueada
   setInterval(comprobar, 1000);
