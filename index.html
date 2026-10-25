@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lluvia</title>
+<meta name="theme-color" content="#0b1020">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lluvia">
+<link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<style>
+  :root {
+    --bg: #0b1020;
+    --bg2: #111933;
+    --card: rgba(255,255,255,0.045);
+    --card-on: rgba(140,170,230,0.16);
+    --line: rgba(255,255,255,0.08);
+    --text: #c9d2e6;
+    --muted: #6f7b98;
+    --accent: #9fb7e8;
+    --moon: #e9e3cf;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%) fixed;
+    color: var(--text);
+    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    -webkit-user-select: none; user-select: none;
+    overscroll-behavior: none;
+  }
+  main {
+    max-width: 480px; margin: 0 auto;
+    padding: calc(env(safe-area-inset-top) + 20px) 16px calc(env(safe-area-inset-bottom) + 24px);
+    min-height: 100%; display: flex; flex-direction: column; gap: 22px;
+  }
+  header { display: flex; align-items: baseline; justify-content: space-between; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: .2px; color: var(--moon); }
+  .estado { font-size: 13px; color: var(--muted); }
+
+  .sonidos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .sonido {
+    appearance: none; border: 1px solid var(--line); background: var(--card);
+    color: var(--text); border-radius: 16px; padding: 16px 14px; text-align: left;
+    font: inherit; cursor: pointer; transition: background .2s, border-color .2s;
+    min-height: 78px;
+  }
+  .sonido b { display: block; font-weight: 600; font-size: 16px; }
+  .sonido span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+  .sonido[aria-pressed="true"] { background: var(--card-on); border-color: rgba(159,183,232,.45); }
+  .sonido[aria-pressed="true"] b { color: #e3ebff; }
+  .sonido:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+  .reproductor { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 4px; }
+  #play {
+    width: 112px; height: 112px; border-radius: 50%;
+    border: 1px solid rgba(159,183,232,.35);
+    background: radial-gradient(circle at 50% 40%, rgba(159,183,232,.22), rgba(159,183,232,.06));
+    color: var(--moon); cursor: pointer; display: grid; place-items: center;
+  }
+  #play svg { width: 40px; height: 40px; }
+  #play:active { transform: scale(.97); }
+  .cuenta { font-variant-numeric: tabular-nums; font-size: 15px; color: var(--accent); min-height: 21px; }
+
+  section h2 { font-size: 13px; font-weight: 500; color: var(--muted); margin: 0 0 10px; text-transform: uppercase; letter-spacing: .8px; }
+  .tiempos { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tiempo {
+    appearance: none; font: inherit; font-size: 14px; color: var(--text);
+    background: var(--card); border: 1px solid var(--line); border-radius: 999px;
+    padding: 9px 14px; cursor: pointer;
+  }
+  .tiempo[aria-pressed="true"] { background: var(--card-on); border-color: rgba(159,183,232,.45); color: #e3ebff; }
+
+  footer { margin-top: auto; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  footer p { margin: 0 0 6px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Lluvia</h1>
+    <div class="estado" id="estado">En pausa</div>
+  </header>
+
+  <div class="sonidos" id="sonidos" role="group" aria-label="Sonido">
+    <button class="sonido" data-id="lluvia-suave"><b>Lluvia suave</b><span>Constante y tranquila</span></button>
+    <button class="sonido" data-id="tormenta"><b>Tormenta</b><span>Lluvia fuerte y truenos lejanos</span></button>
+    <button class="sonido" data-id="ventana"><b>En la ventana</b><span>Gotas contra el cristal</span></button>
+    <button class="sonido" data-id="mar"><b>Mar</b><span>Olas lentas</span></button>
+    <button class="sonido" data-id="ruido-marron"><b>Ruido marrón</b><span>Grave y uniforme, sin sorpresas</span></button>
+  </div>
+
+  <div class="reproductor">
+    <button id="play" aria-label="Reproducir"></button>
+    <div class="cuenta" id="cuenta"></div>
+  </div>
+
+  <section>
+    <h2>Apagar tras</h2>
+    <div class="tiempos" id="tiempos" role="group" aria-label="Temporizador">
+      <button class="tiempo" data-min="0">Nunca</button>
+      <button class="tiempo" data-min="15">15 min</button>
+      <button class="tiempo" data-min="30">30 min</button>
+      <button class="tiempo" data-min="45">45 min</button>
+      <button class="tiempo" data-min="60">1 h</button>
+      <button class="tiempo" data-min="90">1 h 30</button>
+    </div>
+  </section>
+
+  <footer>
+    <p>El volumen se ajusta con los botones del iPhone.</p>
+    <p>Puedes bloquear la pantalla: sigue sonando y se controla desde la pantalla de bloqueo.</p>
+  </footer>
+</main>
+
+<audio id="audio" loop preload="none" playsinline></audio>
+
+<script>
+(() => {
+  const SONIDOS = {
+    "lluvia-suave": "Lluvia suave",
+    "tormenta": "Tormenta",
+    "ventana": "Lluvia en la ventana",
+    "mar": "Mar",
+    "ruido-marron": "Ruido marrón"
+  };
+  const ICON_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>';
+  const ICON_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4.2" height="14" rx="1.2"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.2"/></svg>';
+
+  const audio = document.getElementById("audio");
+  const btnPlay = document.getElementById("play");
+  const estado = document.getElementById("estado");
+  const cuenta = document.getElementById("cuenta");
+  const botonesSonido = [...document.querySelectorAll(".sonido")];
+  const botonesTiempo = [...document.querySelectorAll(".tiempo")];
+
+  const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  const leer = (k, def) => { try { return localStorage.getItem(k) ?? def; } catch (e) { return def; } };
+
+  let actual = leer("sonido", "lluvia-suave");
+  if (!SONIDOS[actual]) actual = "lluvia-suave";
+  let minutos = parseInt(leer("minutos", "45"), 10);
+  if (isNaN(minutos)) minutos = 45;
+  let finEn = null;          // timestamp en ms en que debe parar
+  let apagando = false;
+
+  function marcar() {
+    botonesSonido.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.id === actual)));
+    botonesTiempo.forEach(b => b.setAttribute("aria-pressed", String(parseInt(b.dataset.min, 10) === minutos)));
+  }
+
+  function sonando() { return !audio.paused && !audio.ended; }
+
+  function pintar() {
+    const on = sonando();
+    btnPlay.innerHTML = on ? ICON_PAUSE : ICON_PLAY;
+    btnPlay.setAttribute("aria-label", on ? "Pausar" : "Reproducir");
+    estado.textContent = on ? SONIDOS[actual] : "En pausa";
+    pintarCuenta();
+  }
+
+  function pintarCuenta() {
+    if (!finEn || !sonando()) { cuenta.textContent = minutos && !sonando() ? `Se apagará ${minutos} min después de empezar` : ""; return; }
+    const ms = Math.max(0, finEn - Date.now());
+    const m = Math.floor(ms / 60000), s = Math.floor((ms % 60000) / 1000);
+    cuenta.textContent = `Se apaga en ${m}:${String(s).padStart(2, "0")}`;
+  }
+
+  function cargar(id) {
+    const url = `sonidos/${id}.m4a`;
+    if (!audio.src.endsWith(url)) {
+      audio.src = url;
+      audio.load();
+    }
+  }
+
+  function armarTemporizador() {
+    finEn = minutos > 0 ? Date.now() + minutos * 60000 : null;
+  }
+
+  async function reproducir() {
+    cargar(actual);
+    audio.volume = 1;
+    apagando = false;
+    try {
+      await audio.play();
+      if (!finEn) armarTemporizador();
+    } catch (e) {
+      estado.textContent = "No se pudo reproducir";
+    }
+    actualizarSesion();
+    pintar();
+  }
+
+  function pausar() {
+    audio.pause();
+    finEn = null;
+    pintar();
+  }
+
+  // Al terminar el temporizador: intenta bajar el volumen poco a poco
+  // (en iPhone el volumen no se puede cambiar desde la web, así que allí simplemente para).
+  function apagarSuave() {
+    if (apagando) return;
+    apagando = true;
+    let v = audio.volume;
+    const paso = () => {
+      v -= 0.05;
+      try { audio.volume = Math.max(0, v); } catch (e) {}
+      if (v > 0 && audio.volume < 1 && sonando()) setTimeout(paso, 300);
+      else { pausar(); audio.volume = 1; apagando = false; }
+    };
+    paso();
+  }
+
+  function comprobar() {
+    if (finEn && sonando() && Date.now() >= finEn) apagarSuave();
+    pintarCuenta();
+  }
+
+  function actualizarSesion() {
+    if (!("mediaSession" in navigator)) return;
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: SONIDOS[actual],
+      artist: "Lluvia",
+      artwork: [
+        { src: "iconos/icon-192.png", sizes: "192x192", type: "image/png" },
+        { src: "iconos/icon-512.png", sizes: "512x512", type: "image/png" }
+      ]
+    });
+  }
+
+  if ("mediaSession" in navigator) {
+    const set = (a, fn) => { try { navigator.mediaSession.setActionHandler(a, fn); } catch (e) {} };
+    set("play", () => reproducir());
+    set("pause", () => pausar());
+    set("stop", () => pausar());
+    // sin saltos ni avance: no tienen sentido en un bucle
+    set("seekbackward", null); set("seekforward", null);
+    set("previoustrack", null); set("nexttrack", null);
+  }
+
+  botonesSonido.forEach(b => b.addEventListener("click", () => {
+    const estabaSonando = sonando();
+    actual = b.dataset.id;
+    guardar("sonido", actual);
+    marcar();
+    cargar(actual);
+    if (estabaSonando) reproducir(); else { actualizarSesion(); pintar(); }
+  }));
+
+  botonesTiempo.forEach(b => b.addEventListener("click", () => {
+    minutos = parseInt(b.dataset.min, 10);
+    guardar("minutos", String(minutos));
+    marcar();
+    if (sonando()) armarTemporizador();
+    pintarCuenta();
+  }));
+
+  btnPlay.addEventListener("click", () => sonando() ? pausar() : reproducir());
+
+  audio.addEventListener("play", pintar);
+  audio.addEventListener("pause", pintar);
+  audio.addEventListener("timeupdate", comprobar);   // sigue llegando con la pantalla bloqueada
+  setInterval(comprobar, 1000);
+  document.addEventListener("visibilitychange", comprobar);
+
+  marcar();
+  pintar();
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  }
+})();
+</script>
+</body>
+</html>
