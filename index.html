@@ -450,8 +450,27 @@
   marcar();
   pintar();
 
+  // Actualizaciones: busca versión nueva al abrir y al volver a la app;
+  // cuando llega, recarga sola (salvo si está sonando, para no cortarte).
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+    const habiaControlador = !!navigator.serviceWorker.controller;
+    let recargando = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!habiaControlador || recargando) return;
+      if (sonando()) return;            // se aplicará la próxima vez que abras la app
+      recargando = true;
+      location.reload();
+    });
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js", { updateViaCache: "none" })
+        .then(reg => {
+          reg.update().catch(() => {});
+          document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") reg.update().catch(() => {});
+          });
+        })
+        .catch(() => {});
+    });
   }
 })();
 </script>
