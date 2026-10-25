@@ -22,6 +22,8 @@
     --muted: #6f7b98;
     --accent: #9fb7e8;
     --moon: #e9e3cf;
+    --amber: #e6c58f;
+    --amber-on: rgba(230,197,143,0.14);
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; }
@@ -37,22 +39,34 @@
     padding: calc(env(safe-area-inset-top) + 20px) 16px calc(env(safe-area-inset-bottom) + 24px);
     min-height: 100%; display: flex; flex-direction: column; gap: 22px;
   }
-  header { display: flex; align-items: baseline; justify-content: space-between; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
   h1 { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: .2px; color: var(--moon); }
-  .estado { font-size: 13px; color: var(--muted); }
+  .estado { font-size: 13px; color: var(--muted); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
   .sonidos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .sonido {
+  .sonido, .historia {
     appearance: none; border: 1px solid var(--line); background: var(--card);
     color: var(--text); border-radius: 16px; padding: 16px 14px; text-align: left;
     font: inherit; cursor: pointer; transition: background .2s, border-color .2s;
-    min-height: 78px;
+    min-height: 78px; width: 100%;
   }
-  .sonido b { display: block; font-weight: 600; font-size: 16px; }
-  .sonido span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+  .sonido b, .historia b { display: block; font-weight: 600; font-size: 16px; }
+  .sonido span, .historia span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 3px; }
   .sonido[aria-pressed="true"] { background: var(--card-on); border-color: rgba(159,183,232,.45); }
   .sonido[aria-pressed="true"] b { color: #e3ebff; }
   .sonido:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+  .historia { display: flex; align-items: center; gap: 14px; }
+  .historia svg { width: 28px; height: 28px; flex: none; color: var(--amber); }
+  .historia b { color: var(--amber); }
+  .historia[aria-pressed="true"] { background: var(--amber-on); border-color: rgba(230,197,143,.45); }
+
+  .ahora {
+    display: none; border-left: 2px solid rgba(230,197,143,.5); padding: 2px 0 2px 12px;
+  }
+  .ahora.visible { display: block; }
+  .ahora .titulo { font-size: 15px; color: #efe3cc; line-height: 1.35; -webkit-user-select: text; user-select: text; }
+  .ahora .meta { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
 
   .reproductor { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 4px; }
   #play {
@@ -63,7 +77,7 @@
   }
   #play svg { width: 40px; height: 40px; }
   #play:active { transform: scale(.97); }
-  .cuenta { font-variant-numeric: tabular-nums; font-size: 15px; color: var(--accent); min-height: 21px; }
+  .cuenta { font-variant-numeric: tabular-nums; font-size: 15px; color: var(--accent); min-height: 21px; text-align: center; }
 
   section h2 { font-size: 13px; font-weight: 500; color: var(--muted); margin: 0 0 10px; text-transform: uppercase; letter-spacing: .8px; }
   .tiempos { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -94,6 +108,16 @@
     <button class="sonido" data-id="ruido-blanco"><b>Ruido blanco</b><span>Siseo uniforme, tapa los ruidos</span></button>
   </div>
 
+  <button class="historia" id="historia" aria-pressed="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M9 8h7M9 11.5h5"/></svg>
+    <div><b>Historia</b><span id="historia-sub">Un episodio de historia al azar, de una hora más o menos</span></div>
+  </button>
+
+  <div class="ahora" id="ahora">
+    <div class="titulo" id="ahora-titulo"></div>
+    <div class="meta" id="ahora-meta"></div>
+  </div>
+
   <div class="reproductor">
     <button id="play" aria-label="Reproducir"></button>
     <div class="cuenta" id="cuenta"></div>
@@ -114,10 +138,11 @@
   <footer>
     <p>El volumen se ajusta con los botones del iPhone.</p>
     <p>Puedes bloquear la pantalla: sigue sonando y se controla desde la pantalla de bloqueo.</p>
+    <p>Las historias son episodios de podcasts de iVoox y se escuchan directamente desde su fuente original.</p>
   </footer>
 </main>
 
-<audio id="audio" loop preload="none" playsinline></audio>
+<audio id="audio" preload="none" playsinline></audio>
 
 <script>
 (() => {
@@ -132,35 +157,59 @@
   const ICON_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>';
   const ICON_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4.2" height="14" rx="1.2"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.2"/></svg>';
 
-  const audio = document.getElementById("audio");
-  const btnPlay = document.getElementById("play");
-  const estado = document.getElementById("estado");
-  const cuenta = document.getElementById("cuenta");
+  const $ = id => document.getElementById(id);
+  const audio = $("audio");
+  const btnPlay = $("play");
+  const estado = $("estado");
+  const cuenta = $("cuenta");
+  const btnHistoria = $("historia");
+  const historiaSub = $("historia-sub");
+  const ahora = $("ahora");
   const botonesSonido = [...document.querySelectorAll(".sonido")];
   const botonesTiempo = [...document.querySelectorAll(".tiempo")];
 
   const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
   const leer = (k, def) => { try { return localStorage.getItem(k) ?? def; } catch (e) { return def; } };
+  const leerJSON = (k, def) => { try { return JSON.parse(leer(k, "")) ?? def; } catch (e) { return def; } };
 
+  // ---- estado ----
+  let modo = leer("modo", "sonido");                 // "sonido" | "historia"
   let actual = leer("sonido", "lluvia-suave");
   if (!SONIDOS[actual]) actual = "lluvia-suave";
+  let historia = leerJSON("historia", null);          // {t,p,u,d,f,pos}
+  if (modo === "historia" && !historia) modo = "sonido";
   let minutos = parseInt(leer("minutos", "45"), 10);
   if (isNaN(minutos)) minutos = 45;
-  let finEn = null;          // timestamp en ms en que debe parar
+  let finEn = null;
   let apagando = false;
+  let lista = null;
+
+  const fmtDur = s => { const h = Math.floor(s / 3600), m = Math.round((s % 3600) / 60); return h ? (m ? `${h} h ${m} min` : `${h} h`) : `${m} min`; };
 
   function marcar() {
-    botonesSonido.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.id === actual)));
+    botonesSonido.forEach(b => b.setAttribute("aria-pressed", String(modo === "sonido" && b.dataset.id === actual)));
+    btnHistoria.setAttribute("aria-pressed", String(modo === "historia"));
     botonesTiempo.forEach(b => b.setAttribute("aria-pressed", String(parseInt(b.dataset.min, 10) === minutos)));
+    if (modo === "historia" && historia) {
+      ahora.classList.add("visible");
+      $("ahora-titulo").textContent = historia.t;
+      $("ahora-meta").textContent = `${historia.p} · ${fmtDur(historia.d)}`;
+      historiaSub.textContent = "Pulsa otra vez para cambiar a otra distinta";
+    } else {
+      ahora.classList.remove("visible");
+      historiaSub.textContent = "Un episodio de historia al azar, de una hora más o menos";
+    }
   }
 
   function sonando() { return !audio.paused && !audio.ended; }
+
+  function nombreActual() { return modo === "historia" && historia ? historia.p : SONIDOS[actual]; }
 
   function pintar() {
     const on = sonando();
     btnPlay.innerHTML = on ? ICON_PAUSE : ICON_PLAY;
     btnPlay.setAttribute("aria-label", on ? "Pausar" : "Reproducir");
-    estado.textContent = on ? SONIDOS[actual] : "En pausa";
+    estado.textContent = on ? nombreActual() : "En pausa";
     pintarCuenta();
   }
 
@@ -171,21 +220,29 @@
     cuenta.textContent = `Se apaga en ${m}:${String(s).padStart(2, "0")}`;
   }
 
-  function cargar(id) {
-    const url = `sonidos/${id}.m4a`;
-    if (!audio.src.endsWith(url)) {
-      audio.src = url;
+  // ---- carga de audio ----
+  function cargarSonido(id) {
+    const url = new URL(`sonidos/${id}.m4a`, location.href).href;
+    audio.loop = true;
+    if (audio.src !== url) { audio.src = url; audio.load(); }
+  }
+
+  function cargarHistoria(h) {
+    audio.loop = false;
+    if (audio.src !== h.u) {
+      audio.src = h.u;
       audio.load();
+      if (h.pos > 30) {
+        const irA = () => { try { audio.currentTime = h.pos - 10; } catch (e) {} };
+        audio.addEventListener("loadedmetadata", irA, { once: true });
+      }
     }
   }
 
-  function armarTemporizador() {
-    finEn = minutos > 0 ? Date.now() + minutos * 60000 : null;
-  }
+  function armarTemporizador() { finEn = minutos > 0 ? Date.now() + minutos * 60000 : null; }
 
   async function reproducir() {
-    cargar(actual);
-    audio.volume = 1;
+    if (modo === "historia" && historia) cargarHistoria(historia); else cargarSonido(actual);
     apagando = false;
     try {
       await audio.play();
@@ -200,11 +257,10 @@
   function pausar() {
     audio.pause();
     finEn = null;
+    guardarPosicion();
     pintar();
   }
 
-  // Al terminar el temporizador: intenta bajar el volumen poco a poco
-  // (en iPhone el volumen no se puede cambiar desde la web, así que allí simplemente para).
   function apagarSuave() {
     if (apagando) return;
     apagando = true;
@@ -218,16 +274,25 @@
     paso();
   }
 
+  let ultimoGuardado = 0;
+  function guardarPosicion() {
+    if (modo !== "historia" || !historia || audio.src !== historia.u) return;
+    historia.pos = Math.floor(audio.currentTime || 0);
+    guardar("historia", JSON.stringify(historia));
+  }
+
   function comprobar() {
     if (finEn && sonando() && Date.now() >= finEn) apagarSuave();
+    if (sonando() && Date.now() - ultimoGuardado > 15000) { ultimoGuardado = Date.now(); guardarPosicion(); }
     pintarCuenta();
   }
 
   function actualizarSesion() {
     if (!("mediaSession" in navigator)) return;
+    const esHistoria = modo === "historia" && historia;
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: SONIDOS[actual],
-      artist: "Lluvia",
+      title: esHistoria ? historia.t : SONIDOS[actual],
+      artist: esHistoria ? historia.p : "Lluvia",
       artwork: [
         { src: "iconos/icon-192.png", sizes: "192x192", type: "image/png" },
         { src: "iconos/icon-512.png", sizes: "512x512", type: "image/png" }
@@ -235,22 +300,66 @@
     });
   }
 
+  // ---- historias ----
+  async function cargarLista() {
+    if (lista) return lista;
+    const r = await fetch("historias/historias.json", { cache: "no-cache" });
+    if (!r.ok) throw new Error("sin lista");
+    lista = await r.json();
+    return lista;
+  }
+
+  function elegir(todas) {
+    let oidas = new Set(leerJSON("oidas", []));
+    let libres = todas.filter(h => !oidas.has(h.u));
+    if (!libres.length) { oidas = new Set(); libres = todas; }   // se acabaron: vuelta a empezar
+    if (historia) {
+      const sinLaActual = libres.filter(h => h.u !== historia.u);
+      if (sinLaActual.length) libres = sinLaActual;
+    }
+    const h = libres[Math.floor(Math.random() * libres.length)];
+    oidas.add(h.u);
+    guardar("oidas", JSON.stringify([...oidas]));
+    return { ...h, pos: 0 };
+  }
+
+  btnHistoria.addEventListener("click", async () => {
+    historiaSub.textContent = "Buscando una historia…";
+    try {
+      const todas = await cargarLista();
+      if (modo === "historia" && historia) guardarPosicion();
+      historia = elegir(todas);
+      guardar("historia", JSON.stringify(historia));
+      modo = "historia";
+      guardar("modo", modo);
+      finEn = null;
+      marcar();
+      await reproducir();
+    } catch (e) {
+      historiaSub.textContent = "No se pudo cargar la lista de historias. Prueba de nuevo en un rato.";
+    }
+  });
+
+  // ---- controles ----
   if ("mediaSession" in navigator) {
     const set = (a, fn) => { try { navigator.mediaSession.setActionHandler(a, fn); } catch (e) {} };
     set("play", () => reproducir());
     set("pause", () => pausar());
     set("stop", () => pausar());
-    // sin saltos ni avance: no tienen sentido en un bucle
-    set("seekbackward", null); set("seekforward", null);
+    set("seekbackward", () => { if (modo === "historia") audio.currentTime = Math.max(0, audio.currentTime - 15); });
+    set("seekforward", () => { if (modo === "historia") audio.currentTime += 30; });
     set("previoustrack", null); set("nexttrack", null);
   }
 
   botonesSonido.forEach(b => b.addEventListener("click", () => {
     const estabaSonando = sonando();
+    if (modo === "historia") guardarPosicion();
+    modo = "sonido";
+    guardar("modo", modo);
     actual = b.dataset.id;
     guardar("sonido", actual);
     marcar();
-    cargar(actual);
+    cargarSonido(actual);
     if (estabaSonando) reproducir(); else { actualizarSesion(); pintar(); }
   }));
 
@@ -265,10 +374,17 @@
   btnPlay.addEventListener("click", () => sonando() ? pausar() : reproducir());
 
   audio.addEventListener("play", pintar);
-  audio.addEventListener("pause", pintar);
+  audio.addEventListener("pause", () => { guardarPosicion(); pintar(); });
+  audio.addEventListener("ended", () => {
+    if (modo === "historia" && historia) { historia.pos = 0; guardar("historia", JSON.stringify(historia)); }
+    finEn = null; pintar();
+  });
+  audio.addEventListener("error", () => {
+    if (audio.src) estado.textContent = modo === "historia" ? "Este episodio no carga: pulsa Historia para otro" : "No se pudo cargar el sonido";
+  });
   audio.addEventListener("timeupdate", comprobar);   // sigue llegando con la pantalla bloqueada
   setInterval(comprobar, 1000);
-  document.addEventListener("visibilitychange", comprobar);
+  document.addEventListener("visibilitychange", () => { guardarPosicion(); comprobar(); });
 
   marcar();
   pintar();
