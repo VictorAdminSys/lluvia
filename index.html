@@ -56,10 +56,21 @@
   .sonido[aria-pressed="true"] b { color: #e3ebff; }
   .sonido:last-child:nth-child(odd) { grid-column: 1 / -1; }
 
-  .historia { display: flex; align-items: center; gap: 14px; }
-  .historia svg { width: 28px; height: 28px; flex: none; color: var(--amber); }
+  .historia { cursor: default; display: flex; flex-direction: column; gap: 14px; }
+  .historia.activa { background: var(--amber-on); border-color: rgba(230,197,143,.45); }
+  .historia-cab { display: flex; align-items: center; gap: 14px; }
+  .historia-cab svg { width: 28px; height: 28px; flex: none; color: var(--amber); }
   .historia b { color: var(--amber); }
-  .historia[aria-pressed="true"] { background: var(--amber-on); border-color: rgba(230,197,143,.45); }
+  .historia-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .hbtn {
+    appearance: none; font: inherit; font-size: 15px; font-weight: 600; color: #f1e4c9;
+    background: rgba(230,197,143,.10); border: 1px solid rgba(230,197,143,.35); border-radius: 12px;
+    padding: 12px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .hbtn svg { width: 18px; height: 18px; }
+  .hbtn span { display: inline; font-size: inherit; color: inherit; margin: 0; }
+  .hbtn:active { transform: scale(.98); }
+  .hbtn:disabled { opacity: .35; cursor: default; }
 
   .ahora {
     display: none; border-left: 2px solid rgba(230,197,143,.5); padding: 2px 0 2px 12px;
@@ -102,21 +113,29 @@
   <div class="sonidos" id="sonidos" role="group" aria-label="Sonido">
     <button class="sonido" data-id="lluvia-suave"><b>Lluvia suave</b><span>Constante y tranquila</span></button>
     <button class="sonido" data-id="tormenta"><b>Tormenta</b><span>Lluvia fuerte y truenos lejanos</span></button>
-    <button class="sonido" data-id="ventana"><b>En el coche</b><span>Gotas sobre el techo, desde dentro</span></button>
     <button class="sonido" data-id="mar"><b>Mar</b><span>Olas lentas</span></button>
     <button class="sonido" data-id="ruido-marron"><b>Ruido marrón</b><span>Grave y uniforme, sin sorpresas</span></button>
     <button class="sonido" data-id="ruido-blanco"><b>Ruido blanco</b><span>Siseo uniforme, tapa los ruidos</span></button>
   </div>
 
-  <button class="historia" id="historia" aria-pressed="false">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M9 8h7M9 11.5h5"/></svg>
-    <div><b>Historia</b><span id="historia-sub">Un episodio de historia al azar, de una hora más o menos</span></div>
-  </button>
-
-  <div class="ahora" id="ahora">
-    <div class="titulo" id="ahora-titulo"></div>
-    <div class="meta" id="ahora-meta"></div>
-  </div>
+  <section class="historia" id="historia">
+    <div class="historia-cab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M9 8h7M9 11.5h5"/></svg>
+      <div><b>Historia</b><span id="historia-sub">Episodios de historia de una hora más o menos</span></div>
+    </div>
+    <div class="ahora" id="ahora">
+      <div class="titulo" id="ahora-titulo"></div>
+      <div class="meta" id="ahora-meta"></div>
+    </div>
+    <div class="historia-botones">
+      <button class="hbtn" id="continuar" disabled>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>Continuar
+      </button>
+      <button class="hbtn" id="siguiente">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 5.5v13a1 1 0 0 0 1.5.86L15 14v4.5a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-13a.5.5 0 0 0-.5-.5h-2a.5.5 0 0 0-.5.5V10L6.5 4.64A1 1 0 0 0 5 5.5z"/></svg><span id="siguiente-txt">Siguiente</span>
+      </button>
+    </div>
+  </section>
 
   <div class="reproductor">
     <button id="play" aria-label="Reproducir"></button>
@@ -149,7 +168,6 @@
   const SONIDOS = {
     "lluvia-suave": "Lluvia suave",
     "tormenta": "Tormenta",
-    "ventana": "Lluvia en el coche",
     "mar": "Mar",
     "ruido-marron": "Ruido marrón",
     "ruido-blanco": "Ruido blanco"
@@ -162,8 +180,10 @@
   const btnPlay = $("play");
   const estado = $("estado");
   const cuenta = $("cuenta");
-  const btnHistoria = $("historia");
+  const bloqueHistoria = $("historia");
   const historiaSub = $("historia-sub");
+  const btnContinuar = $("continuar");
+  const btnSiguiente = $("siguiente");
   const ahora = $("ahora");
   const botonesSonido = [...document.querySelectorAll(".sonido")];
   const botonesTiempo = [...document.querySelectorAll(".tiempo")];
@@ -188,16 +208,25 @@
 
   function marcar() {
     botonesSonido.forEach(b => b.setAttribute("aria-pressed", String(modo === "sonido" && b.dataset.id === actual)));
-    btnHistoria.setAttribute("aria-pressed", String(modo === "historia"));
     botonesTiempo.forEach(b => b.setAttribute("aria-pressed", String(parseInt(b.dataset.min, 10) === minutos)));
-    if (modo === "historia" && historia) {
+    const enHistoria = modo === "historia" && !!historia;
+    const sonandoHistoria = enHistoria && sonando();
+    bloqueHistoria.classList.toggle("activa", enHistoria);
+    btnContinuar.disabled = !historia || sonandoHistoria;
+    $("siguiente-txt").textContent = historia ? "Siguiente" : "Empezar";
+    if (historia) {
       ahora.classList.add("visible");
       $("ahora-titulo").textContent = historia.t;
-      $("ahora-meta").textContent = `${historia.p} · ${fmtDur(historia.d)}`;
-      historiaSub.textContent = "Pulsa otra vez para cambiar a otra distinta";
+      const pos = historia.pos || 0;
+      $("ahora-meta").textContent = pos > 30
+        ? `${historia.p} · vas por ${fmtDur(pos)} de ${fmtDur(historia.d)}`
+        : `${historia.p} · ${fmtDur(historia.d)}`;
+      historiaSub.textContent = sonandoHistoria
+        ? "Sonando ahora"
+        : "Continuar retoma esta · Siguiente pone otra distinta";
     } else {
       ahora.classList.remove("visible");
-      historiaSub.textContent = "Un episodio de historia al azar, de una hora más o menos";
+      historiaSub.textContent = "Episodios de historia de una hora más o menos";
     }
   }
 
@@ -210,6 +239,7 @@
     btnPlay.innerHTML = on ? ICON_PAUSE : ICON_PLAY;
     btnPlay.setAttribute("aria-label", on ? "Pausar" : "Reproducir");
     estado.textContent = on ? nombreActual() : "En pausa";
+    marcar();
     pintarCuenta();
   }
 
@@ -323,7 +353,7 @@
     return { ...h, pos: 0 };
   }
 
-  btnHistoria.addEventListener("click", async () => {
+  async function siguiente() {
     historiaSub.textContent = "Buscando una historia…";
     try {
       const todas = await cargarLista();
@@ -338,7 +368,20 @@
     } catch (e) {
       historiaSub.textContent = "No se pudo cargar la lista de historias. Prueba de nuevo en un rato.";
     }
-  });
+  }
+
+  function continuar() {
+    if (!historia) return;
+    if (modo !== "historia") {
+      modo = "historia";
+      guardar("modo", modo);
+      finEn = null;
+    }
+    reproducir();
+  }
+
+  btnSiguiente.addEventListener("click", siguiente);
+  btnContinuar.addEventListener("click", continuar);
 
   // ---- controles ----
   if ("mediaSession" in navigator) {
@@ -348,7 +391,8 @@
     set("stop", () => pausar());
     set("seekbackward", () => { if (modo === "historia") audio.currentTime = Math.max(0, audio.currentTime - 15); });
     set("seekforward", () => { if (modo === "historia") audio.currentTime += 30; });
-    set("previoustrack", null); set("nexttrack", null);
+    set("previoustrack", null);
+    set("nexttrack", () => { if (modo === "historia") siguiente(); });
   }
 
   botonesSonido.forEach(b => b.addEventListener("click", () => {
@@ -384,11 +428,11 @@
   let saltos = 0;
   function saltarHistoria() {
     if (modo !== "historia" || saltos >= 3) {
-      estado.textContent = "Este episodio no carga: pulsa Historia para otro";
+      estado.textContent = "Este episodio no carga: pulsa Siguiente";
       return;
     }
     saltos++;
-    btnHistoria.click();
+    siguiente();
   }
   audio.addEventListener("loadedmetadata", () => {
     if (modo !== "historia" || !historia || !isFinite(audio.duration)) return;

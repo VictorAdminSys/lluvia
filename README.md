@@ -1,6 +1,6 @@
 # Lluvia
 
-Web app instalable (PWA) para iPhone con sonidos para dormir: lluvia suave, tormenta, lluvia en el coche, mar, ruido marrón y ruido blanco. Bucles de 5 minutos sin cortes, temporizador de apagado y controles en la pantalla de bloqueo.
+Web app instalable (PWA) para iPhone con sonidos para dormir: lluvia suave, tormenta, mar, ruido marrón y ruido blanco. Bucles de 5 minutos sin cortes, temporizador de apagado y controles en la pantalla de bloqueo.
 
 ## Publicarla en GitHub Pages
 
